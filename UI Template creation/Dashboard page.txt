@@ -1,0 +1,13 @@
+import React from 'react';
+
+const Dashboard = () => {
+  return (
+    <div>
+      <h1>ProductiveHub Dashboard</h1>
+      <button>Add Task</button>
+      <div>Task List</div>
+    </div>
+  );
+};
+
+export default Dashboard;
