@@ -1,3 +1,0 @@
-mkdir productivehub-backend
-cd productivehub-backend
-npm init -y
