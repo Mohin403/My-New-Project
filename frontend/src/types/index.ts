@@ -12,6 +12,7 @@ export interface User {
 }
 
 export interface Task {
+  _id: string;
   id: string;
   taskId: string;
   title: string;
@@ -21,6 +22,9 @@ export interface Task {
   startDate?: string;
   endDate?: string;
   owner: string;
+  teamId?: string;
+  sharedWith?: string[];
+  attachments?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +43,7 @@ export interface Note {
 }
 
 export interface CalendarEvent {
+  _id: string;
   id: string;
   eventId: string;
   title: string;
@@ -52,20 +57,23 @@ export interface CalendarEvent {
 }
 
 export interface Team {
+  _id: string;
   id: string;
   teamId: string;
   name: string;
   description?: string;
   members: Array<{
-    user: string;
+    user: string | User;
     role: 'member' | 'admin';
+    _id?: string;
   }>;
-  owner: string;
+  owner: string | User;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface Notification {
+  _id: string;
   id: string;
   notificationId: string;
   title: string;

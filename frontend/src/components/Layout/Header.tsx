@@ -32,15 +32,7 @@ const Header: React.FC<HeaderProps> = ({ title, onAddClick, showAddButton = true
             {isSearchOpen ? <X className="w-5 h-5" /> : <Search className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
           
-          {/* Search - Desktop */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="pl-8 sm:pl-10 pr-3 sm:pr-4 py-1.5 sm:py-2 text-sm w-32 md:w-40 lg:w-60 xl:w-80 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+         
           
           {/* Mobile Search Expanded */}
           {isSearchOpen && (

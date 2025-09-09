@@ -10,48 +10,12 @@ import Dashboard from './components/Dashboard/Dashboard';
 import Tasks from './components/Tasks/Tasks';
 import Notes from './components/Notes/Notes';
 import Teams from './components/Teams/Teams';
+import Calendar from './components/Calendar/Calendar';
+import Analytics from './components/Analytics/Analytics';
+import Settings from './components/Settings/Settings';
+import Notifications from './components/Notifications/Notifications';
 
-// Calendar placeholder component
-const Calendar: React.FC = () => {
-  return (
-    <div className="text-center py-8 sm:py-12">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Calendar Coming Soon</h2>
-      <p className="text-sm sm:text-base text-gray-600 px-4 sm:px-0">Calendar integration with event management will be available in the next update.</p>
-    </div>
-  );
-};
-
-// Teams component is now imported from './components/Teams/Teams'
-
-// Analytics placeholder component
-const Analytics: React.FC = () => {
-  return (
-    <div className="text-center py-8 sm:py-12">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Analytics Coming Soon</h2>
-      <p className="text-sm sm:text-base text-gray-600 px-4 sm:px-0">Advanced analytics and insights will be available in the next update.</p>
-    </div>
-  );
-};
-
-// Notifications placeholder component
-const Notifications: React.FC = () => {
-  return (
-    <div className="text-center py-8 sm:py-12">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Notifications</h2>
-      <p className="text-sm sm:text-base text-gray-600 px-4 sm:px-0">Notification management will be available in the next update.</p>
-    </div>
-  );
-};
-
-// Settings placeholder component
-const Settings: React.FC = () => {
-  return (
-    <div className="text-center py-8 sm:py-12">
-      <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Settings</h2>
-      <p className="text-sm sm:text-base text-gray-600 px-4 sm:px-0">User settings and preferences will be available in the next update.</p>
-    </div>
-  );
-};
+// Protected route component
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -93,44 +57,7 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppContent: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
 
-  const getTabTitle = (tab: string) => {
-    const titles: Record<string, string> = {
-      dashboard: 'Dashboard',
-      tasks: 'Tasks',
-      calendar: 'Calendar',
-      notes: 'Notes',
-      teams: 'Teams',
-      analytics: 'Analytics',
-      notifications: 'Notifications',
-      settings: 'Settings',
-    };
-    return titles[tab] || 'TaskFlow Pro';
-  };
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'tasks':
-        return <Tasks />;
-      case 'notes':
-        return <Notes />;
-      case 'calendar':
-        return <Calendar />;
-      case 'teams':
-        return <Teams />;
-      case 'analytics':
-        return <Analytics />;
-      case 'notifications':
-        return <Notifications />;
-      case 'settings':
-        return <Settings />;
-      default:
-        return <Dashboard />;
-    }
-  };
 
   return (
     <Routes>

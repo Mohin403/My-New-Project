@@ -5,6 +5,8 @@ import { noteService } from '../../services/api';
 import NoteCard from './NoteCard';
 import NoteModal from './NoteModal';
 import { Note } from '../../types';
+import ExportButton from '../common/ExportButton';
+import { exportNotesToCSV, generatePDFExport } from '../../utils/exportUtils';
 
 const Notes: React.FC = () => {
   const { notes, addNote, updateNote, deleteNote } = useApp();
@@ -150,14 +152,23 @@ const Notes: React.FC = () => {
             </button>
           </div>
 
-          {/* Add Note Button */}
-          <button
-            onClick={handleAddNote}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 flex items-center space-x-2 text-sm sm:text-base"
-          >
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Add Note</span>
-          </button>
+          <div className="flex space-x-2">
+            {/* Export Button */}
+            <ExportButton 
+              onExportCSV={() => exportNotesToCSV(filteredNotes)}
+              onExportPDF={() => generatePDFExport('notes', filteredNotes)}
+              label="Export"
+            />
+            
+            {/* Add Note Button */}
+            <button
+              onClick={handleAddNote}
+              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 flex items-center space-x-2 text-sm sm:text-base"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Add Note</span>
+            </button>
+          </div>
         </div>
       </div>
 

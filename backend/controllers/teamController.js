@@ -44,11 +44,14 @@ const getTeams = asyncHandler(async (req, res) => {
 // @access  Private
 const getTeamById = asyncHandler(async (req, res) => {
   const team = await Team.findOne({
-    $or: [{ _id: req.params.id }, { teamId: req.params.id }],
-    $or: [
-      { owner: req.user._id },
-      { 'members.user': req.user._id },
-    ],
+    $and: [
+      { $or: [{ _id: req.params.id }, { teamId: req.params.id }] },
+      { $or: [
+          { owner: req.user._id },
+          { 'members.user': req.user._id },
+        ]
+      }
+    ]
   }).populate('members.user', 'name email profilePhoto');
 
   if (team) {
@@ -117,10 +120,12 @@ const deleteTeam = asyncHandler(async (req, res) => {
 // @route   POST /api/teams/:id/members
 // @access  Private/TeamAdmin
 const addTeamMember = asyncHandler(async (req, res) => {
-  const { email, role } = req.body;
+  const { userId, role } = req.body;
   
-  // Find user by email
-  const user = await User.findOne({ email });
+  // Find user by email or userId
+  const user = await User.findOne({ 
+    $or: [{ email: userId }, { userId: userId }]
+  });
   
   if (!user) {
     res.status(404);
@@ -199,6 +204,16 @@ const removeTeamMember = asyncHandler(async (req, res) => {
   if (team.owner.toString() === req.params.userId) {
     res.status(400);
     throw new Error('Cannot remove team owner');
+  }
+
+  // Find the member to remove
+  const memberExists = team.members.some(
+    member => member.user.toString() === req.params.userId
+  );
+
+  if (!memberExists) {
+    res.status(404);
+    throw new Error('Member not found in team');
   }
 
   // Remove member

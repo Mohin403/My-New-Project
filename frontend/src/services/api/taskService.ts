@@ -8,12 +8,25 @@ interface CreateTaskData {
   priority: 'low' | 'medium' | 'high';
   startDate?: string;
   endDate?: string;
+  teamId?: string;
+  sharedWith?: string[];
+  attachments?: string[];
 }
 
 const taskService = {
   // Get all tasks
   getAllTasks: async (): Promise<Task[]> => {
     const response = await apiClient.get<Task[]>('/tasks');
+    return response.data;
+  },
+  
+  shareTask: async (taskId: string, userId: string): Promise<Task> => {
+    const response = await apiClient.post(`/tasks/${taskId}/share`, { userId });
+    return response.data;
+  },
+  
+  unshareTask: async (taskId: string, userId: string): Promise<Task> => {
+    const response = await apiClient.delete(`/tasks/${taskId}/share/${userId}`);
     return response.data;
   },
 

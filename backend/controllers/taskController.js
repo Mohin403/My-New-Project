@@ -1,12 +1,13 @@
 import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
+import mongoose from 'mongoose';
 import { Task } from '../models/taskModel.js';
 
 // @desc    Create a new task
 // @route   POST /api/tasks
 // @access  Private
 const createTask = asyncHandler(async (req, res) => {
-  const { title, description, status, priority, startDate, endDate } = req.body;
+  const { title, description, status, priority, startDate, endDate, teamId, sharedWith, attachments } = req.body;
 
   const task = await Task.create({
     taskId: uuidv4(),
@@ -17,6 +18,9 @@ const createTask = asyncHandler(async (req, res) => {
     startDate,
     endDate,
     owner: req.user._id,
+    teamId,
+    sharedWith,
+    attachments,
   });
 
   if (task) {
@@ -27,11 +31,17 @@ const createTask = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get all tasks for a user
+// @desc    Get all tasks for a user (including shared tasks)
 // @route   GET /api/tasks
 // @access  Private
 const getTasks = asyncHandler(async (req, res) => {
-  const tasks = await Task.find({ owner: req.user._id });
+  const tasks = await Task.find({
+    $or: [
+      { owner: req.user._id },
+      { sharedWith: req.user._id },
+      { teamId: { $in: req.user.teams } }
+    ]
+  }).populate('teamId', 'name');
   res.json(tasks);
 });
 
@@ -40,8 +50,7 @@ const getTasks = asyncHandler(async (req, res) => {
 // @access  Private
 const getTaskById = asyncHandler(async (req, res) => {
   const task = await Task.findOne({
-    $or: [{ _id: req.params.id }, { taskId: req.params.id }],
-    owner: req.user._id,
+    $or: [{ _id: req.params.id }, { taskId: req.params.id }]
   });
 
   if (task) {
@@ -58,7 +67,11 @@ const getTaskById = asyncHandler(async (req, res) => {
 const updateTask = asyncHandler(async (req, res) => {
   const task = await Task.findOne({
     $or: [{ _id: req.params.id }, { taskId: req.params.id }],
-    owner: req.user._id,
+    $or: [
+      { owner: req.user._id },
+      { sharedWith: req.user._id },
+      { teamId: { $in: req.user.teams } }
+    ]
   });
 
   if (task) {
@@ -68,6 +81,9 @@ const updateTask = asyncHandler(async (req, res) => {
     task.priority = req.body.priority || task.priority;
     task.startDate = req.body.startDate || task.startDate;
     task.endDate = req.body.endDate || task.endDate;
+    task.teamId = req.body.teamId || task.teamId;
+    task.sharedWith = req.body.sharedWith || task.sharedWith;
+    task.attachments = req.body.attachments || task.attachments;
 
     const updatedTask = await task.save();
     res.json(updatedTask);
@@ -82,8 +98,7 @@ const updateTask = asyncHandler(async (req, res) => {
 // @access  Private
 const deleteTask = asyncHandler(async (req, res) => {
   const task = await Task.findOne({
-    $or: [{ _id: req.params.id }, { taskId: req.params.id }],
-    owner: req.user._id,
+    $or: [{ _id: req.params.id }, { taskId: req.params.id }]
   });
 
   if (task) {
@@ -119,12 +134,91 @@ const getTasksByPriority = asyncHandler(async (req, res) => {
   res.json(tasks);
 });
 
-export {
-  createTask,
-  getTasks,
-  getTaskById,
-  updateTask,
-  deleteTask,
-  getTasksByStatus,
+// @desc    Share a task with a user
+// @route   POST /api/tasks/:id/share
+// @access  Private
+const shareTask = asyncHandler(async (req, res) => {
+ try {
+   const { userId } = req.body;
+  
+  if (!userId) {
+    res.status(400);
+    throw new Error('User ID is required');
+  }
+  
+  const task = await Task.findOne({
+    $or: [{ _id: req.params.id }, { taskId: req.params.id }]
+  });
+  
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+  
+  // Verify the current user is the owner of the task
+  if (task.owner.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized to share this task');
+  }
+  
+  // Convert userId to ObjectId
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  
+  // Check if user is already in sharedWith
+  if (task.sharedWith && task.sharedWith.some(id => id.toString() === userObjectId.toString())) {
+    res.status(400);
+    throw new Error('Task already shared with this user');
+  }
+  
+  // Add user to sharedWith array
+  if (!task.sharedWith) {
+    task.sharedWith = [userObjectId];
+  } else {
+    task.sharedWith.push(userObjectId);
+  }
+  
+  const updatedTask = await task.save();
+  res.json(updatedTask);
+ } catch (error) {
+  res.status(400);
+  console.log("Task error",error)
+  throw new Error(error.message);
+ }
+});
+
+// @desc    Unshare a task with a user
+// @route   DELETE /api/tasks/:id/share/:userId
+// @access  Private
+const unshareTask = asyncHandler(async (req, res) => {
+  const task = await Task.findOne({
+    $or: [{ _id: req.params.id }, { taskId: req.params.id }],
+    owner: req.user._id,
+  });
+  
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+  
+  // Remove user from sharedWith array
+  if (task.sharedWith) {
+    task.sharedWith = task.sharedWith.filter(
+      userId => userId.toString() !== req.params.userId
+    );
+  }
+  
+  const updatedTask = await task.save();
+  res.json(updatedTask);
+});
+
+export { 
+  createTask, 
+  getTasks, 
+  getTaskById, 
+  updateTask, 
+  deleteTask, 
+  getTasksByStatus, 
   getTasksByPriority,
+  shareTask,
+  unshareTask
 };

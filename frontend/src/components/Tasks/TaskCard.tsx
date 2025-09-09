@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MoreVertical, Edit, Trash2, Loader } from 'lucide-react';
+import { Calendar, Clock, MoreVertical, Edit, Trash2, Loader, Users, Paperclip, Share2 } from 'lucide-react';
 import { Task } from '../../types';
 
 interface TaskCardProps {
@@ -7,9 +7,10 @@ interface TaskCardProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onShare?: (task: Task) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusChange }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusChange, onShare }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isChangingStatus, setIsChangingStatus] = useState(false);
@@ -58,6 +59,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusCha
           
           {showMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
+              {onShare && (
+                <button
+                  onClick={() => {
+                    onShare(task);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                >
+                  <Share2 className="w-4 h-4" />
+                  <span>Share</span>
+                </button>
+              )}
               <button
                 onClick={() => {
                   onEdit(task);
@@ -69,11 +82,11 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusCha
                 <span>Edit</span>
               </button>
               <button
-                onClick={async () => {
+                onClick={() => {
                   setIsDeleting(true);
                   setActionError('');
                   try {
-                    await onDelete(task.id);
+                    onDelete(task._id);
                     setShowMenu(false);
                   } catch (error: any) {
                     console.error('Failed to delete task:', error);
@@ -101,6 +114,18 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusCha
         <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[task.status]}`}>
           {getStatusIcon(task.status)} {task.status.replace('-', ' ')}
         </span>
+        {task.teamId && (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 flex items-center gap-1">
+            <Users className="w-3 h-3" />
+            Team
+          </span>
+        )}
+        {task.attachments && task.attachments.length > 0 && (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 flex items-center gap-1">
+            <Paperclip className="w-3 h-3" />
+            {task.attachments.length}
+          </span>
+        )}
       </div>
 
       {/* Dates */}
@@ -129,7 +154,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusCha
               setIsChangingStatus(true);
               setActionError('');
               try {
-                await onStatusChange(task.id, 'pending');
+                await onStatusChange(task._id, 'pending');
               } catch (error: any) {
                 console.error('Failed to update task status:', error);
                 setActionError(error.message || 'Failed to update status');
@@ -148,7 +173,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusCha
               setIsChangingStatus(true);
               setActionError('');
               try {
-                await onStatusChange(task.id, 'in-progress');
+                await onStatusChange(task._id, 'in-progress');
               } catch (error: any) {
                 console.error('Failed to update task status:', error);
                 setActionError(error.message || 'Failed to update status');
@@ -167,7 +192,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onEdit, onDelete, onStatusCha
               setIsChangingStatus(true);
               setActionError('');
               try {
-                await onStatusChange(task.id, 'completed');
+                await onStatusChange(task._id, 'completed');
               } catch (error: any) {
                 console.error('Failed to update task status:', error);
                 setActionError(error.message || 'Failed to update status');

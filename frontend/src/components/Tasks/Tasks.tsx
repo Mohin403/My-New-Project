@@ -4,7 +4,10 @@ import { useApp } from '../../context/AppContext';
 import { taskService } from '../../services/api';
 import TaskCard from './TaskCard';
 import TaskModal from './TaskModal';
+import ShareTaskModal from './ShareTaskModal';
 import { Task } from '../../types';
+import ExportButton from '../common/ExportButton';
+import { exportTasksToCSV, generatePDFExport } from '../../utils/exportUtils';
 
 const Tasks: React.FC = () => {
   const { tasks, addTask, updateTask, deleteTask } = useApp();
@@ -28,6 +31,7 @@ const Tasks: React.FC = () => {
     fetchTasks();
   }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
   const [filter, setFilter] = useState<'all' | Task['status']>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,12 +54,17 @@ const Tasks: React.FC = () => {
     setIsModalOpen(true);
   };
 
+  const handleShareTask = (task: Task) => {
+    setEditingTask(task);
+    setIsShareModalOpen(true);
+  };
+
   const handleSaveTask = async (taskData: Omit<Task, 'id' | 'taskId' | 'createdAt' | 'updatedAt'>) => {
     setLoading(true);
     setError('');
     try {
       if (editingTask) {
-        await updateTask(editingTask.id, taskData);
+        await updateTask(editingTask._id, taskData);
       } else {
         await addTask(taskData);
       }
@@ -68,14 +77,11 @@ const Tasks: React.FC = () => {
   };
 
   const handleStatusChange = async (id: string, status: Task['status']) => {
-    setLoading(true);
     try {
       await updateTask(id, { status });
     } catch (err: any) {
       setError(err.message || 'Failed to update task status');
       console.error('Error updating task status:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -102,14 +108,23 @@ const Tasks: React.FC = () => {
           />
         </div>
 
-        {/* Add Task Button */}
-        <button
-          onClick={handleAddTask}
-          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 flex items-center space-x-2 text-sm sm:text-base"
-        >
-          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span>Add Task</span>
-        </button>
+        <div className="flex space-x-2">
+          {/* Export Button */}
+          <ExportButton 
+            onExportCSV={() => exportTasksToCSV(filteredTasks)}
+            onExportPDF={() => generatePDFExport(JSON.stringify(filteredTasks), 'tasks-export')}
+            label="Export"
+          />
+          
+          {/* Add Task Button */}
+          <button
+            onClick={handleAddTask}
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg hover:shadow-lg transform hover:scale-[1.02] transition-all duration-200 flex items-center space-x-2 text-sm sm:text-base"
+          >
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span>Add Task</span>
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs */}
@@ -155,6 +170,7 @@ const Tasks: React.FC = () => {
               onEdit={handleEditTask}
               onDelete={deleteTask}
               onStatusChange={handleStatusChange}
+              onShare={handleShareTask}
             />
           ))}
         </div>
@@ -188,6 +204,21 @@ const Tasks: React.FC = () => {
         onSave={handleSaveTask}
         task={editingTask}
       />
+
+      {/* Share Task Modal */}
+      {isShareModalOpen && editingTask && (
+        <ShareTaskModal
+          isOpen={isShareModalOpen}
+          onClose={() => {
+            setIsShareModalOpen(false);
+            setEditingTask(undefined);
+          }}
+          task={editingTask}
+          onTaskUpdated={(updatedTask) => {
+            updateTask(updatedTask._id, updatedTask);
+          }}
+        />
+      )}
     </div>
   );
 };

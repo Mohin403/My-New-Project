@@ -41,11 +41,11 @@ const TeamCard: React.FC<TeamCardProps> = ({ team, onEdit, onDelete, onAddMember
     
     try {
       setIsAddingMember(true);
+      setError('');
       await onAddMember(email, role);
       setEmail('');
       setRole('member');
       setAddMemberOpen(false);
-      setError('');
     } catch (err: any) {
       setError(err.message || 'Failed to add member');
     } finally {
@@ -200,27 +200,32 @@ const TeamCard: React.FC<TeamCardProps> = ({ team, onEdit, onDelete, onAddMember
       <div className="p-3 sm:p-4 border-t border-gray-200">
         <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Team Members ({team.members.length})</h4>
         <ul className="space-y-1.5 sm:space-y-2">
-          {team.members.map((member) => (
-            <li key={member.user} className="flex justify-between items-center text-xs sm:text-sm">
-              <div className="mr-2 truncate">
-                <span className="font-medium truncate block sm:inline">{member.user}</span>
-                <span className="ml-0 sm:ml-2 text-xs px-1.5 sm:px-2 py-0.5 bg-gray-100 rounded-full inline-block mt-1 sm:mt-0">
-                  {member.role}
-                </span>
-              </div>
-              <button
-                onClick={() => handleRemoveMember(member.user)}
-                disabled={isRemovingMember === member.user}
-                className="text-gray-500 hover:text-red-600 flex-shrink-0 ml-2"
-              >
-                {isRemovingMember === member.user ? (
-                  <Loader className="h-3 sm:h-4 w-3 sm:w-4 animate-spin" />
-                ) : (
-                  <UserMinus className="h-3 sm:h-4 w-3 sm:w-4" />
-                )}
-              </button>
-            </li>
-          ))}
+          {team.members.map((member) => {
+            const userId = typeof member.user === 'string' ? member.user : member.user.id;
+            const userName = typeof member.user === 'string' ? 'Unknown User' : member.user.name;
+            
+            return (
+              <li key={userId} className="flex justify-between items-center text-xs sm:text-sm">
+                <div className="mr-2 truncate">
+                  <span className="font-medium truncate block sm:inline">{userName}</span>
+                  <span className="ml-0 sm:ml-2 text-xs px-1.5 sm:px-2 py-0.5 bg-gray-100 rounded-full inline-block mt-1 sm:mt-0">
+                    {member.role}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleRemoveMember(userId)}
+                  disabled={isRemovingMember === userId}
+                  className="text-gray-500 hover:text-red-600 flex-shrink-0 ml-2"
+                >
+                  {isRemovingMember === userId ? (
+                    <Loader className="h-3 sm:h-4 w-3 sm:w-4 animate-spin" />
+                  ) : (
+                    <UserMinus className="h-3 sm:h-4 w-3 sm:w-4" />
+                  )}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>

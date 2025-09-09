@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, Clock, Flag, Loader } from 'lucide-react';
-import { Task } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Calendar, Clock, Flag, Loader, Users, Paperclip, Upload } from 'lucide-react';
+import { Task, Team } from '../../types';
+import { useApp } from '../../context/AppContext';
 
 interface TaskModalProps {
   isOpen: boolean;
@@ -10,14 +11,18 @@ interface TaskModalProps {
 }
 
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task }) => {
+  const { teams } = useApp();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Task['priority']>('medium');
   const [status, setStatus] = useState<Task['status']>('pending');
+  const [teamId, setTeamId] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (task) {
@@ -25,15 +30,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task }) 
       setDescription(task.description || '');
       setPriority(task.priority);
       setStatus(task.status);
+      setTeamId(task.teamId || '');
       setStartDate(task.startDate ? new Date(task.startDate).toISOString().split('T')[0] : '');
       setEndDate(task.endDate ? new Date(task.endDate).toISOString().split('T')[0] : '');
+      setAttachments(task.attachments || []);
     } else {
       setTitle('');
       setDescription('');
       setPriority('medium');
       setStatus('pending');
+      setTeamId('');
       setStartDate('');
       setEndDate('');
+      setAttachments([]);
     }
   }, [task, isOpen]);
 
@@ -47,12 +56,17 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task }) 
       description: description || undefined,
       priority,
       status,
+      teamId: teamId || undefined,
       startDate: startDate ? new Date(startDate).toISOString() : undefined,
       endDate: endDate ? new Date(endDate).toISOString() : undefined,
+      attachments: attachments.length > 0 ? attachments : undefined,
     };
 
     try {
-      onSave({ ...taskData, owner: 'current-user' });
+      onSave({
+        ...taskData, owner: 'current-user',
+        _id: ''
+      });
       onClose();
     } catch (err: any) {
       console.error('Failed to save task:', err);
@@ -66,7 +80,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task }) 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center overflow-scroll justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -149,6 +163,27 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task }) 
               </select>
             </div>
           </div>
+          
+          {/* Team Assignment */}
+          <div>
+            <label htmlFor="teamId" className="block text-sm font-medium text-gray-700 mb-2">
+              <Users className="w-4 h-4 inline mr-1" />
+              Assign to Team (Optional)
+            </label>
+            <select
+              id="teamId"
+              value={teamId}
+              onChange={(e) => setTeamId(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">No team (Personal task)</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team._id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Dates */}
           <div className="grid grid-cols-2 gap-4">
@@ -180,6 +215,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, onSave, task }) 
               />
             </div>
           </div>
+
+        
 
           {/* Actions */}
           <div className="flex items-center space-x-4 pt-4 border-t border-gray-200">

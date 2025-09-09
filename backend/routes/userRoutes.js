@@ -20,9 +20,12 @@ router.route('/profile')
   .get(protect, getUserProfile)
   .put(protect, updateUserProfile);
 
+// Get all users route (accessible to all authenticated users for task sharing)
+router.get('/all', protect, getUsers);
+
 // Admin routes
 router.route('/')
-  .get(protect, admin, getUsers);
+  .get(protect, getUsers);
 
 router.route('/:id')
   .delete(protect, admin, deleteUser);

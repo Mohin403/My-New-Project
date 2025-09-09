@@ -76,29 +76,31 @@ const Teams: React.FC = () => {
 
   const handleAddMember = async (teamId: string, email: string, role: 'member' | 'admin') => {
     try {
-      setLoading(true);
+      // Don't set global loading state to avoid UI flicker
       const updatedTeam = await teamService.addTeamMember(teamId, { userId: email, role });
       setTeams(prev => prev.map(team => team.id === updatedTeam.id ? updatedTeam : team));
       setError('');
+      return updatedTeam;
     } catch (err: any) {
-      setError(err.message || 'Failed to add team member');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to add team member';
+      setError(errorMsg);
       console.error('Error adding team member:', err);
-    } finally {
-      setLoading(false);
+      throw new Error(errorMsg);
     }
   };
 
   const handleRemoveMember = async (teamId: string, userId: string) => {
     try {
-      setLoading(true);
+      // Don't set global loading state to avoid UI flicker
       const updatedTeam = await teamService.removeTeamMember(teamId, userId);
       setTeams(prev => prev.map(team => team.id === updatedTeam.id ? updatedTeam : team));
       setError('');
+      return updatedTeam;
     } catch (err: any) {
-      setError(err.message || 'Failed to remove team member');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to remove team member';
+      setError(errorMsg);
       console.error('Error removing team member:', err);
-    } finally {
-      setLoading(false);
+      throw new Error(errorMsg);
     }
   };
 
@@ -189,8 +191,8 @@ const Teams: React.FC = () => {
                 setIsModalOpen(true);
               }}
               onDelete={() => handleDeleteTeam(team.id)}
-              onAddMember={(email, role) => handleAddMember(team.id, email, role)}
-              onRemoveMember={(userId) => handleRemoveMember(team.id, userId)}
+              onAddMember={(email, role) => handleAddMember(team._id, email, role)}
+              onRemoveMember={(userId) => handleRemoveMember(team._id, userId)}
             />
           ))}
         </div>

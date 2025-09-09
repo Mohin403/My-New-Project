@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Task, Note, CalendarEvent, Notification, Team } from '../types';
+import { User, Task, Note, CalendarEvent, Team, Notification, Analytics } from '../types';
 import { mockUser, mockTasks, mockNotes, mockEvents, mockNotifications } from '../utils/mockData';
-import { authService, taskService, noteService, teamService } from '../services/api';
+import { authService, taskService, noteService, teamService, userService } from '../services/api';
 
 interface AppContextType {
   user: User | null;
@@ -23,6 +23,7 @@ interface AppContextType {
   updateEvent: (id: string, updates: Partial<CalendarEvent>) => void;
   deleteEvent: (id: string) => void;
   markNotificationAsRead: (id: string) => void;
+  getUsers: () => Promise<User[]>;
   getTeams: () => Promise<Team[]>;
   addTeam: (team: Omit<Team, 'id' | 'teamId' | 'createdAt' | 'updatedAt' | 'members' | 'owner'>) => Promise<Team>;
   updateTeam: (id: string, updates: Partial<Team>) => Promise<Team>;
@@ -71,7 +72,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     
     loadUserData();
-  }, []);
+    
+    return () => {
+      // Cleanup function when component unmounts
+    };
+  }, [isAuthenticated]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -122,8 +127,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const updatedTask = await taskService.updateTask(id, updates);
       setTasks(prev => prev.map(task => 
-        task.id === id ? updatedTask : task
+        task._id === id ? updatedTask : task
       ));
+      
       return updatedTask;
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -134,7 +140,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteTask = async (id: string) => {
     try {
       await taskService.deleteTask(id);
-      setTasks(prev => prev.filter(task => task.id !== id));
+      setTasks(prev => prev.filter(task => task._id !== id));
     } catch (error) {
       console.error('Failed to delete task:', error);
       throw error;
@@ -156,7 +162,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const updatedNote = await noteService.updateNote(id, updates);
       setNotes(prev => prev.map(note => 
-        note.id === id ? updatedNote : note
+        note._id === id ? updatedNote : note
       ));
       return updatedNote;
     } catch (error) {
@@ -168,7 +174,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteNote = async (id: string) => {
     try {
       await noteService.deleteNote(id);
-      setNotes(prev => prev.filter(note => note.id !== id));
+      setNotes(prev => prev.filter(note => note._id !== id));
     } catch (error) {
       console.error('Failed to delete note:', error);
       throw error;
@@ -188,22 +194,33 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const updateEvent = (id: string, updates: Partial<CalendarEvent>) => {
     setEvents(prev => prev.map(event => 
-      event.id === id 
+      event._id === id 
         ? { ...event, ...updates, updatedAt: new Date().toISOString() }
         : event
     ));
   };
 
   const deleteEvent = (id: string) => {
-    setEvents(prev => prev.filter(event => event.id !== id));
+    setEvents(prev => prev.filter(event => event._id !== id));
   };
 
   const markNotificationAsRead = (id: string) => {
     setNotifications(prev => prev.map(notification =>
-      notification.id === id
+      notification._id === id
         ? { ...notification, read: true, updatedAt: new Date().toISOString() }
         : notification
     ));
+  };
+
+  // User management functions
+  const getUsers = async (): Promise<User[]> => {
+    try {
+      const fetchedUsers = await userService.getAllUsers();
+      return fetchedUsers;
+    } catch (error) {
+      console.error('Failed to fetch users:', error);
+      throw error;
+    }
   };
 
   // Team management functions
@@ -233,7 +250,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const updatedTeam = await teamService.updateTeam(id, updates);
       setTeams(prev => prev.map(team => 
-        team.id === id ? updatedTeam : team
+        team._id === id ? updatedTeam : team
       ));
       return updatedTeam;
     } catch (error) {
@@ -245,7 +262,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const deleteTeam = async (id: string): Promise<void> => {
     try {
       await teamService.deleteTeam(id);
-      setTeams(prev => prev.filter(team => team.id !== id));
+      setTeams(prev => prev.filter(team => team._id !== id));
     } catch (error) {
       console.error('Failed to delete team:', error);
       throw error;
@@ -256,7 +273,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const updatedTeam = await teamService.addTeamMember(teamId, memberData);
       setTeams(prev => prev.map(team => 
-        team.id === teamId ? updatedTeam : team
+        team._id === teamId ? updatedTeam : team
       ));
       return updatedTeam;
     } catch (error) {
@@ -269,7 +286,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const updatedTeam = await teamService.removeTeamMember(teamId, userId);
       setTeams(prev => prev.map(team => 
-        team.id === teamId ? updatedTeam : team
+        team._id === teamId ? updatedTeam : team
       ));
       return updatedTeam;
     } catch (error) {
@@ -298,6 +315,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateEvent,
     deleteEvent,
     markNotificationAsRead,
+    getUsers,
     getTeams,
     addTeam,
     updateTeam,
